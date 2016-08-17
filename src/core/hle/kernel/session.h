@@ -50,7 +50,27 @@ constexpr u32 MappedBufferDesc(u32 size, MappedBufferPermissions perms) {
     return 0x8 | (size << 4) | (u32)perms;
 }
 
-}
+enum BufferMappingType {
+    InputBuffer     = 1,
+    OutputBuffer    = 2,
+    ReadWriteBuffer = InputBuffer| OutputBuffer
+};
+
+/** CheckBufferMappingTranslation function
+ *    If the buffer mapping translation was valid, this function will return a true
+ *      InputBuffer     : read-only
+ *      OutputBuffer    : write-only
+ *      ReadWriteBuffer : read-write
+ *    Note:
+ *        Structure of Buffer Mapping Translation:
+ *          bit 1-2 : Access permission flags for the receiving process: 1=read-only, 2=write-only, 3=read-write.
+ *                    Specifying 0 will cause a kernel panic.
+ *          bit 3   : This kind of translation is enabled by setting bit3 in the translation descriptor.
+ *          bit 4-? : Size in bytes of the shared memory block.
+ */
+bool CheckBufferMappingTranslation(BufferMappingType mapping_type, u32 size, u32 translation);
+
+} // namespace IPC
 
 namespace Kernel {
 

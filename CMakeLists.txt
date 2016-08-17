@@ -1,6 +1,5 @@
-# CMake 3.1 required for Qt5 settings to be applied automatically on
-# dependent libraries and IMPORTED targets.
-cmake_minimum_required(VERSION 3.1)
+# CMake 3.2 required for cmake to know the right flags for CXX standard on OSX
+cmake_minimum_required(VERSION 3.2)
 
 function(download_bundled_external remote_path lib_name prefix_var)
     set(prefix "${CMAKE_BINARY_DIR}/externals/${lib_name}")
@@ -63,14 +62,12 @@ if (NOT DEFINED ARCHITECTURE)
 endif()
 message(STATUS "Target architecture: ${ARCHITECTURE}")
 
-if (NOT MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -Wno-attributes")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-    if (ARCHITECTURE_x86_64)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1")
-    endif()
+if (NOT MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 else()
     # Silence "deprecation" warnings
     add_definitions(/D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_DEPRECATE /D_SCL_SECURE_NO_WARNINGS)
@@ -184,7 +181,7 @@ ENDIF (APPLE)
 if (ENABLE_QT)
     if (CITRA_USE_BUNDLED_QT)
         if (MSVC14 AND ARCHITECTURE_x86_64)
-            set(QT_VER qt-5.5-msvc2015_64)
+            set(QT_VER qt-5.7-msvc2015_64)
         else()
             message(FATAL_ERROR "No bundled Qt binaries for your toolchain. Disable CITRA_USE_BUNDLED_QT and provide your own.")
         endif()
