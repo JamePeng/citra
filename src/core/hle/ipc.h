@@ -157,4 +157,34 @@ inline DescriptorType GetDescriptorType(u32 descriptor) {
     return StaticBuffer;
 }
 
+/**
+ * CheckBufferMappingTranslation function
+ *    If the translation's buffer_mapping_permission match the @param(mapping_type) type,
+ *    this function will return a true
+ */
+inline bool CheckBufferMappingTranslation(MappedBufferPermissions mapping_type, u32 size,
+                                          u32 translation) {
+    if (0x8 == translation) {
+        return false;
+    }
+    switch (mapping_type) {
+    case IPC::MappedBufferPermissions::R:
+        if (((size << 4) | 0xA) == translation) {
+            return true;
+        }
+        break;
+    case IPC::MappedBufferPermissions::W:
+        if (((size << 4) | 0xC) == translation) {
+            return true;
+        }
+        break;
+    case IPC::MappedBufferPermissions::RW:
+        if (((size << 4) | 0xE) == translation) {
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+
 } // namespace IPC
