@@ -195,6 +195,16 @@ void GetAppletManInfo(Service::Interface* self);
 void GetAppletInfo(Service::Interface* self);
 
 /**
+ * APT:CountRegisteredApplet service function.
+ *  Inputs:
+ *      0 : Header code [0x00080000]
+ *  Outputs:
+ *      1 : Result of function, 0 on success, otherwise error code
+ *      2 : Registered Applet Count
+ */
+void CountRegisteredApplet(Service::Interface* self);
+
+/**
  * APT::IsRegistered service function. This returns whether the specified AppID is registered with
  * NS yet. An AppID is "registered" once the process associated with the AppID uses APT:Enable. Home
  * Menu uses this command to determine when the launched process is running and to determine when to

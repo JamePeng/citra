@@ -140,6 +140,16 @@ void GetAppletManInfo(Service::Interface* self) {
     LOG_WARNING(Service_APT, "(STUBBED) called unk=0x%08X", unk);
 }
 
+void CountRegisteredApplet(Service::Interface* self) {
+    u32* cmd_buff = Kernel::GetCommandBuffer();
+
+    cmd_buff[0] = IPC::MakeHeader(0x8, 0x2, 0);
+    cmd_buff[1] = RESULT_SUCCESS.raw; // No error
+    cmd_buff[2] = HLE::Applets::GetRegisteredAppletCount();
+
+    LOG_WARNING(Service_APT, "registered_applet_count=0x%08X", cmd_buff[2]);
+}
+
 void IsRegistered(Service::Interface* self) {
     u32* cmd_buff = Kernel::GetCommandBuffer();
     u32 app_id = cmd_buff[1];
