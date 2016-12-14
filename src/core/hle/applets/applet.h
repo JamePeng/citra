@@ -71,6 +71,9 @@ protected:
     bool is_running = false;
 };
 
+// Return the registered applet count
+u32 GetRegisteredAppletCount();
+
 /// Returns whether a library applet is currently running
 bool IsLibraryAppletRunning();
 

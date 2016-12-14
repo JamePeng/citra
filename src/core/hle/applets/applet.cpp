@@ -105,6 +105,18 @@ bool Applet::IsRunning() const {
     return is_running;
 }
 
+u32 GetRegisteredAppletCount() {
+    u32 registered_count = 0;
+    const auto applets_end = applets.end();
+
+    for (auto itr = applets.begin(); itr != applets_end; ++itr) {
+        if (itr->second != nullptr) {
+            ++registered_count;
+        }
+    }
+    return registered_count;
+}
+
 bool IsLibraryAppletRunning() {
     // Check the applets map for instances of any applet
     for (auto itr = applets.begin(); itr != applets.end(); ++itr)
