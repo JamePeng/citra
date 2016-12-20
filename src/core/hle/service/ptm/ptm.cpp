@@ -23,7 +23,7 @@ static const GameCoin default_game_coin = {0x4F00, 42, 0, 0, 0, 2014, 12, 29};
 /// Id of the SharedExtData archive used by the PTM process
 static const std::vector<u8> ptm_shared_extdata_id = {0, 0, 0, 0, 0x0B, 0, 0, 0xF0, 0, 0, 0, 0};
 
-static bool shell_open;
+bool is_shell_open;
 
 static bool battery_is_charging;
 
@@ -43,7 +43,7 @@ void GetShellState(Service::Interface* self) {
     u32* cmd_buff = Kernel::GetCommandBuffer();
 
     cmd_buff[1] = RESULT_SUCCESS.raw;
-    cmd_buff[2] = shell_open ? 1 : 0;
+    cmd_buff[2] = is_shell_open ? 1 : 0;
 }
 
 void GetBatteryLevel(Service::Interface* self) {
@@ -115,7 +115,7 @@ void Init() {
     AddService(new PTM_Sysm);
     AddService(new PTM_U);
 
-    shell_open = true;
+    is_shell_open = true;
     battery_is_charging = true;
 
     // Open the SharedExtSaveData archive 0xF000000B and create the gamecoin.dat file if it doesn't

@@ -12,6 +12,8 @@ class Interface;
 
 namespace PTM {
 
+extern bool is_shell_open;
+
 /// Charge levels used by PTM functions
 enum class ChargeLevels : u32 {
     CriticalBattery = 1,
