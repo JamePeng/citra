@@ -31,6 +31,8 @@ static Kernel::SharedPtr<Kernel::Event> notification_event; ///< APT notificatio
 static Kernel::SharedPtr<Kernel::Event> parameter_event;    ///< APT parameter event
 
 static u32 cpu_percent; ///< CPU time available to the running application
+static u32 homemenu_input_buffer;
+static bool is_homemenu_input_buffer_set = false;
 
 // APT::CheckNew3DSApp will check this unknown_ns_state_field to determine processing mode
 static u8 unknown_ns_state_field;
@@ -310,22 +312,104 @@ void StartApplication(Service::Interface* self) {
                 buffer1_size, buffer2_size, flag, size1, buffer1_ptr, size2, buffer2_ptr);
 }
 
+ResultCode AppletUtility(u32& utility_id, u32& input_buffer, u32& input_size, u32& output_buffer,
+                         u32& output_size, bool applet_result) {
+    u32 sender_id = 0;
+    u32 transition = 0;
+    bool shell_open = true;
+
+    switch (static_cast<UtilityID>(utility_id)) {
+    case UtilityID::ClearPowerButtonState: // not useful
+    case UtilityID::ClearExclusiveControl:
+        break;
+
+    case UtilityID::SleepIfShellClosed:
+        shell_open = PTM::is_shell_open;
+        if (!shell_open) {
+            LOG_WARNING(Service_APT,
+                        "(STUBBED) SleepIfShellClosed, The 3DS system should sleep now.");
+        } else {
+            LOG_WARNING(Service_APT, "(STUBBED) SleepIfShellClosed shell_open=%u", shell_open);
+        }
+        break;
+
+    case UtilityID::LockTransition:
+        transition = Memory::Read32(input_buffer);
+        LOG_WARNING(Service_APT, "(STUBBED) LockTransition, transition=0x%08X", transition);
+        break;
+
+    case UtilityID::TryLockTransition:
+        applet_result = false;
+        if (output_buffer) {
+            if (output_size != 0) {
+                transition = Memory::Read32(input_buffer);
+                Memory::Write32(output_buffer, 0);
+                applet_result = true;
+                LOG_WARNING(Service_APT, "(STUBBED) TryLockTransition, transition=0x%08X",
+                            transition);
+            }
+        }
+        LOG_ERROR(Service_APT, "(STUBBED) Utility TryLockTransition Operation Failed");
+        break;
+
+    case UtilityID::UnlockTransition:
+        transition = Memory::Read32(input_buffer);
+        LOG_WARNING(Service_APT, "(STUBBED) UnlockTransition, transition=0x%08X", transition);
+        break;
+
+    case UtilityID::StartExitTask: // not useful
+        break;
+
+    case UtilityID::SetInitialSenderId:
+        sender_id = Memory::Read32(input_buffer);
+        LOG_WARNING(Service_APT, "(STUBBED) SetInitialSenderId, sender_id=0x%08X", sender_id);
+        break;
+
+    case UtilityID::SetPowerButtonClick: // not useful
+        break;
+
+    case UtilityID::SetHomeMenuBuffer:
+        // This input_buffer content(may be a src_appid or a dst_appid) will be used
+        //   by homemenu operation(like APT::LeaveHomeMenu) which try to do SendParameter()
+        is_homemenu_input_buffer_set = true;
+        homemenu_input_buffer = Memory::Read32(input_buffer);
+        LOG_WARNING(Service_APT, "(STUBBED) SetLeaveHomeMenuBuffer, input_buffer=0x%08X",
+                    input_buffer);
+        break;
+
+    default:
+        LOG_ERROR(Service_APT, "(STUBBED) unknown utility_id=0x%08X", utility_id);
+        UNIMPLEMENTED();
+    }
+    return RESULT_SUCCESS;
+}
+
 void AppletUtility(Service::Interface* self) {
     u32* cmd_buff = Kernel::GetCommandBuffer();
 
-    // These are from 3dbrew - I'm not really sure what they're used for.
-    u32 command = cmd_buff[1];
-    u32 buffer1_size = cmd_buff[2];
-    u32 buffer2_size = cmd_buff[3];
-    u32 buffer1_addr = cmd_buff[5];
-    u32 buffer2_addr = cmd_buff[65];
+    u32 utility_id = cmd_buff[1];
+    u32 input_size = cmd_buff[2];
+    u32 output_size = (cmd_buff[3] > 0x1000) ? 0x1000 : cmd_buff[3];
+    u32 input_traslation = cmd_buff[4];
+    u32 input_buffer = cmd_buff[5];
+    u32 output_traslation = cmd_buff[0x40];
+    u32 output_buffer = cmd_buff[0x41];
 
-    cmd_buff[1] = RESULT_SUCCESS.raw; // No error
+    bool applet_result = false; // Only use for utility_id = 6 (bool TryLockTransition)
 
-    LOG_WARNING(Service_APT,
-                "(STUBBED) called command=0x%08X, buffer1_size=0x%08X, buffer2_size=0x%08X, "
-                "buffer1_addr=0x%08X, buffer2_addr=0x%08X",
-                command, buffer1_size, buffer2_size, buffer1_addr, buffer2_addr);
+    if (input_size > 0x1000) {
+        cmd_buff[0] = IPC::MakeHeader(0, 0x1, 0); // 0x40
+        cmd_buff[1] = ResultCode(ErrorDescription::OS_InvalidBufferDescriptor, ErrorModule::OS,
+                                 ErrorSummary::WrongArgument, ErrorLevel::Permanent)
+                          .raw;
+        return;
+    }
+
+    cmd_buff[0] = IPC::MakeHeader(0x4B, 0x2, 0x2); // 0x004B0082
+    cmd_buff[1] = AppletUtility(utility_id, input_buffer, input_size, output_buffer, output_size,
+                                applet_result)
+                      .raw;
+    cmd_buff[2] = static_cast<u32>(applet_result);
 }
 
 void SetAppCpuTimeLimit(Service::Interface* self) {
@@ -538,6 +622,7 @@ void Init() {
     lock = Kernel::Mutex::Create(false, "APT_U:Lock");
 
     cpu_percent = 0;
+    homemenu_input_buffer = 0;
     unknown_ns_state_field = 0;
     screen_capture_post_permission =
         ScreencapPostPermission::CleanThePermission; // TODO(JamePeng): verify the initial value

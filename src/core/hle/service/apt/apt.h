@@ -114,6 +114,19 @@ enum class ScreencapPostPermission : u32 {
     DisableScreenshotPostingToMiiverse = 3
 };
 
+enum class UtilityID : u32 {
+    ClearPowerButtonState = 0,
+    ClearExclusiveControl = 3,
+    SleepIfShellClosed = 4,
+    LockTransition = 5,
+    TryLockTransition = 6,
+    UnlockTransition = 7,
+    StartExitTask = 10,
+    SetInitialSenderId = 11,
+    SetPowerButtonClick = 12,
+    SetHomeMenuBuffer = 17
+};
+
 /// Send a parameter to the currently-running application, which will read it via ReceiveParameter
 void SendParameter(const MessageParameter& parameter);
 
@@ -335,13 +348,17 @@ void StartApplication(Service::Interface* self);
 /**
  * APT::AppletUtility service function
  *  Inputs:
- *      1 : Unknown, but clearly used for something
- *      2 : Buffer 1 size (purpose is unknown)
- *      3 : Buffer 2 size (purpose is unknown)
- *      5 : Buffer 1 address (purpose is unknown)
- *      65 : Buffer 2 address (purpose is unknown)
+ *      1 : UtilityID
+ *      2 : Input Size
+ *      3 : Output Size
+ *      4 : (Input Size << 14) | 0x402
+ *      5 : void*, Input
+ *   0x41 : void*, Output
  *  Outputs:
  *      1 : Result of function, 0 on success, otherwise error code
+ *      2 : Applet Result
+ *  Note:
+ *      This function may affect specific srv:Notifications operation by using Utility
  */
 void AppletUtility(Service::Interface* self);
 
